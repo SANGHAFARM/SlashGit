@@ -40,6 +40,4 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	USpringArmComponent* SpringArm;
 	
-	
-
 };
