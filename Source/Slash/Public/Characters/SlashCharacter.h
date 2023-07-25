@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "CharacterTypes.h"
 #include "SlashCharacter.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
+class AItem;
 
 UCLASS()
 class SLASH_API ASlashCharacter : public ACharacter
@@ -31,13 +33,24 @@ protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void Turn(float Value);
-	void LookUp(float Value);	
+	void LookUp(float Value);
+	void EKeyPressed();
 
 private:
+	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
 
 	UPROPERTY(VisibleAnywhere)
 	USpringArmComponent* SpringArm;
 	
+	UPROPERTY(VisibleInstanceOnly)
+	AItem* OverlappingItem;
+
+public:
+	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
+	FORCEINLINE void SetCharacterState(ECharacterState State) { CharacterState = State; }
+
+	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 };
