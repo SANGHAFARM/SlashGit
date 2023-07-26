@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
+#include "Animation/AnimMontage.h"
 
 // Sets default values
 ASlashCharacter::ASlashCharacter()
@@ -57,10 +58,13 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction(TEXT("Equip"), EInputEvent::IE_Pressed, this, &ASlashCharacter::EKeyPressed);
+	PlayerInputComponent->BindAction(TEXT("Attack"), EInputEvent::IE_Pressed, this, &ASlashCharacter::Attack);
 }
 
 void ASlashCharacter::MoveForward(float Value)
 {
+	if (ActionState == EActionState::EAS_Attacking) return;
+
 	if (Controller && Value != 0.f)
 	{
 		const FRotator ControlRotation = GetControlRotation();
@@ -73,6 +77,8 @@ void ASlashCharacter::MoveForward(float Value)
 
 void ASlashCharacter::MoveRight(float Value)
 {
+	if (ActionState == EActionState::EAS_Attacking) return;
+
 	if (Controller && Value != 0.f)
 	{
 		const FRotator ControlRotation = GetControlRotation();
@@ -102,4 +108,55 @@ void ASlashCharacter::EKeyPressed()
 		OverlappingWeapon->Equip(GetMesh(), TEXT("RightHandSocket"));
 		CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
 	}
+}
+
+void ASlashCharacter::Attack()
+{
+	if (CanAttack())
+	{		
+		PlayAttackMontage();
+		ActionState = EActionState::EAS_Attacking;
+	}
+}
+
+bool ASlashCharacter::CanAttack()
+{
+	return ActionState == EActionState::EAS_Unoccupied &&
+		CharacterState != ECharacterState::ECS_Unequipped;
+}
+
+void ASlashCharacter::PlayAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && AttackMontage)
+	{
+		AnimInstance->Montage_Play(AttackMontage);
+
+		FName SectionName = FName();
+		uint8 Selection = FMath::RandRange(0, 2);
+		switch (Selection)
+		{
+			case 0:
+				SectionName = FName("Attack1");
+				UE_LOG(LogTemp, Warning, TEXT("Attack1"));
+				break;
+			case 1:
+				SectionName = FName("Attack2");
+				UE_LOG(LogTemp, Warning, TEXT("Attack2"));
+				break;
+			case 2:
+				SectionName = FName("Attack3");
+				UE_LOG(LogTemp, Warning, TEXT("Attack3"));
+				break;
+			default:
+				break;
+		}
+
+		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
+	}
+}
+
+void ASlashCharacter::AttackEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied;
 }
