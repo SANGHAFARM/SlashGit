@@ -102,10 +102,10 @@ void ASlashCharacter::LookUp(float Value)
 
 void ASlashCharacter::EKeyPressed()
 {
-	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
+	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);	
 
 	if (OverlappingWeapon)
-	{
+	{		
 		OverlappingWeapon->Equip(GetMesh(), TEXT("RightHandSocket"));
 		CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
 		OverlappingItem = nullptr;
@@ -184,6 +184,7 @@ void ASlashCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type Collisio
 	if (EquippedWeapon && EquippedWeapon->GetWeaponBox())
 	{
 		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+		EquippedWeapon->IgnoreActors.Empty();
 	}
 }
 
@@ -218,15 +219,13 @@ void ASlashCharacter::PlayAttackMontage()
 	}
 }
 
-void ASlashCharacter::PlayEquipMontage(FName SectionName)
+void ASlashCharacter::PlayEquipMontage(const FName& SectionName)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && EquipMontage)
 	{
 		AnimInstance->Montage_Play(EquipMontage);
 		AnimInstance->Montage_JumpToSection(SectionName, EquipMontage);
-		FString mess = SectionName.ToString();
-		UE_LOG(LogTemp, Warning, TEXT("Play %s Montage"), *mess);
 	}
 }
 
