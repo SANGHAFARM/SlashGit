@@ -6,6 +6,8 @@
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AttributeComponent.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -20,6 +22,10 @@ AEnemy::AEnemy()
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
+	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
+
+	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("Health Bar"));
+	HealthBarWidget->SetupAttachment(GetRootComponent());
 }
 
 // Called when the game starts or when spawned
