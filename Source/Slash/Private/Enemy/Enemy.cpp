@@ -7,7 +7,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AttributeComponent.h"
-#include "Components/WidgetComponent.h"
+#include "HUD/HealthBarComponent.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -24,8 +24,9 @@ AEnemy::AEnemy()
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
 
-	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("Health Bar"));
+	HealthBarWidget = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar"));
 	HealthBarWidget->SetupAttachment(GetRootComponent());
+
 }
 
 // Called when the game starts or when spawned
@@ -33,6 +34,28 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(false);
+	}	
+}
+
+void AEnemy::Die()
+{
+	// TODO : Play Death Montage
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && DeathAnim)
+	{
+		AnimInstance->PlaySlotAnimationAsDynamicMontage(DeathAnim, TEXT("DefaultSlot"));
+	}
+
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(false);
+	}
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetLifeSpan(3.0f);
 }
 
 void AEnemy::PlayHitReactMontage(const FName& SectionName)
@@ -50,6 +73,19 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (CombatTarget)
+	{
+		const double DistanceToTarget = (CombatTarget->GetActorLocation() - GetActorLocation()).Size();
+		if (DistanceToTarget > CombatRadius)
+		{
+			CombatTarget = nullptr;
+
+			if (HealthBarWidget)
+			{
+				HealthBarWidget->SetVisibility(false);
+			}			
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -61,7 +97,20 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
-	DirectionalHitReact(ImpactPoint);
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(true);
+	}
+
+	if (Attributes && Attributes->IsAlive())
+	{
+		DirectionalHitReact(ImpactPoint);
+	}
+	else
+	{
+		bEnemyAlive = Attributes->IsAlive();
+		Die();
+	}	
 
 	if (HitSound)
 	{
@@ -76,7 +125,7 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 }
 
 void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
-{
+{	
 	PlayHitReactMontage(TEXT("Hit"));
 
 	const FVector Forward = GetActorForwardVector();
@@ -98,4 +147,17 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 	{
 		Theta *= -1.f;
 	}
+}
+
+float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (Attributes && HealthBarWidget)
+	{
+		Attributes->ReceiveDamage(DamageAmount);
+		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
+	}
+
+	CombatTarget = EventInstigator->GetPawn();
+
+	return DamageAmount;
 }
