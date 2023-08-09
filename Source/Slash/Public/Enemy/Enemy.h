@@ -5,12 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/HitInterface.h"
+#include "Characters/CharacterTypes.h"
 #include "Enemy.generated.h"
 
 class UAnimMontage;
 class UAttributeComponent;
 class UHealthBarComponent;
 class AAIController;
+class UPawnSensingComponent;
 
 UCLASS()
 class SLASH_API AEnemy : public ACharacter, public IHitInterface
@@ -24,6 +26,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void CheckPatrolTarget();
+
+	void CheckCombatTarget();
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -36,11 +42,19 @@ public:
 	bool bEnemyAlive = true;
 
 private:
+	
+	/*
+	* Components
+	*/
+
 	UPROPERTY(VisibleAnywhere)
 	UAttributeComponent* Attributes;
 
 	UPROPERTY(VisibleAnywhere)
 	UHealthBarComponent* HealthBarWidget;
+
+	UPROPERTY(VisibleAnywhere)
+	UPawnSensingComponent* PawnSensing;
 
 	/**
 	*	Animation Montages
@@ -63,6 +77,9 @@ private:
 	UPROPERTY(EditAnywhere)
 	double CombatRadius = 500.f;
 
+	UPROPERTY(EditAnywhere)
+	double AttackRadius = 150.f;
+
 	/**
 	* Navigation 
 	*/
@@ -80,6 +97,17 @@ private:
 	UPROPERTY(EditAnywhere)
 	double PatrolRadius = 200.f;
 
+	FTimerHandle PatrolTimer;
+	void PatrolTimerFinished();
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	float WaitMin = 5.f;
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	float WaitMax = 10.f;
+
+	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -87,6 +115,11 @@ protected:
 	void Die();
 
 	bool InTargetRange(AActor* Target, double Radius);
+	void MoveToTarget(AActor* Target);
+	AActor* ChoosePatrolTarget();
+
+	UFUNCTION()
+	void PawnSeen(APawn* SeenPawn);
 
 	/**
 	*	Play montage functions
