@@ -33,6 +33,7 @@ public:
 protected:
 	/** <AActor> */
 	virtual void BeginPlay() override;
+	virtual void Destroyed() override;
 	/** <AActor> */
 
 	/** <ABaseCharacter> */
@@ -70,6 +71,7 @@ private:
 	bool InTargetRange(AActor* Target, double Radius);
 	void MoveToTarget(AActor* Target);
 	AActor* ChoosePatrolTarget();
+	void SpawnDefaultWeapon();
 
 	UFUNCTION()
 	void PawnSeen(APawn* SeenPawn); // Callback for OnPawnSeen in UPawnSensingComponent

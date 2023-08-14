@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "Components/AttributeComponent.h"
+#include "Items/Weapons/Weapon.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -80,16 +81,20 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	EnemyController = Cast<AAIController>(GetController());
-	InitializeEnemy();
-
-	/*
-	UWorld* World = GetWorld();
-	if (World && WeaponClass)
+	if (PawnSensing)
 	{
-		World->SpawnActor<AWeapon>(WeaponClass);
+		PawnSensing->OnSeePawn.AddDynamic(this, &AEnemy::PawnSeen);
+	}	
+	Tags.Add(FName("Enemy"));
+	InitializeEnemy();	
+}
+
+void AEnemy::Destroyed()
+{
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->Destroy();
 	}
-	*/
 }
 
 void AEnemy::Die()
@@ -142,12 +147,10 @@ void AEnemy::AttackEnd()
 
 void AEnemy::InitializeEnemy()
 {
-	if (PawnSensing)
-	{
-		PawnSensing->OnSeePawn.AddDynamic(this, &AEnemy::PawnSeen);
-	}
+	EnemyController = Cast<AAIController>(GetController());
 	MoveToTarget(PatrolTarget);
 	HideHealthBar();	
+	SpawnDefaultWeapon();
 }
 
 void AEnemy::CheckPatrolTarget()
@@ -322,13 +325,24 @@ AActor* AEnemy::ChoosePatrolTarget()
 	return nullptr;
 }
 
+void AEnemy::SpawnDefaultWeapon()
+{
+	UWorld* World = GetWorld();
+	if (World && WeaponClass)
+	{
+		AWeapon* DefaultWeapon = World->SpawnActor<AWeapon>(WeaponClass);
+		DefaultWeapon->Equip(GetMesh(), FName("SKT_Sword"), this, this);
+		EquippedWeapon = DefaultWeapon;
+	}
+}
+
 void AEnemy::PawnSeen(APawn* SeenPawn)
 {
 	const bool bShouldChaseTarget =
 		EnemyState != EEnemyState::EES_Dead &&
 		EnemyState != EEnemyState::EES_Chasing &&
 		EnemyState < EEnemyState::EES_Attacking &&
-		SeenPawn->ActorHasTag(FName("SlashCharacter"));
+		SeenPawn->ActorHasTag(FName("EngageableTarget"));
 
 	if (bShouldChaseTarget)
 	{
