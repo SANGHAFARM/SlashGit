@@ -30,6 +30,21 @@ void ABaseCharacter::BeginPlay()
 
 }
 
+void ABaseCharacter::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
+{
+	if (IsAlive() && Hitter)
+	{
+		DirectionalHitReact(Hitter->GetActorLocation());
+	}
+	else
+	{
+		Die();
+	}
+
+	PlayHitSound(ImpactPoint);
+	SpawnHitParticles(ImpactPoint);
+}
+
 void ABaseCharacter::Attack()
 {
 }
@@ -40,8 +55,6 @@ void ABaseCharacter::Die()
 
 void ABaseCharacter::DirectionalHitReact(const FVector& ImpactPoint)
 {
-	PlayHitReactMontage(TEXT("Hit"));
-
 	const FVector Forward = GetActorForwardVector();
 	// Lower Impact Point to the Enemy's Actor Location Z
 	const FVector ImpactLowered(ImpactPoint.X, ImpactPoint.Y, GetActorLocation().Z);
@@ -63,6 +76,23 @@ void ABaseCharacter::DirectionalHitReact(const FVector& ImpactPoint)
 	{
 		Theta *= -1.f;
 	}
+
+	FName Section("FromBack");
+
+	if (Theta >= -45.f && Theta < 45.f)
+	{
+		Section = FName("FromFront");
+	}
+	else if (Theta >= -135.f && Theta < -45.f)
+	{
+		Section = FName("FromLeft");
+	}
+	else if (Theta >= 45.f && Theta < 135.f)
+	{
+		Section = FName("FromRight");
+	}
+
+	PlayHitReactMontage(Section);
 }
 
 void ABaseCharacter::HandleDamage(float DamageAmount)
@@ -126,6 +156,37 @@ void ABaseCharacter::PlayDeathAnim()
 	{
 		AnimInstance->PlaySlotAnimationAsDynamicMontage(DeathAnim, TEXT("DefaultSlot"));
 	}
+}
+
+void ABaseCharacter::StopAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Stop(0.25f, AttackMontage);
+	}
+}
+
+FVector ABaseCharacter::GetTranslationWarpTarget()
+{
+	if (CombatTarget == nullptr) return FVector();
+
+	const FVector CombatTargetLocation = CombatTarget->GetActorLocation();
+	const FVector Location = GetActorLocation();
+
+	FVector TargetToMe = (Location - CombatTargetLocation).GetSafeNormal();
+	TargetToMe *= WarpTargetDistance;
+
+	return CombatTargetLocation + TargetToMe;
+}
+
+FVector ABaseCharacter::GetRotationWarpTarget()
+{
+	if (CombatTarget)
+	{
+		return CombatTarget->GetActorLocation();
+	}
+	return FVector();
 }
 
 void ABaseCharacter::AttackEnd()
