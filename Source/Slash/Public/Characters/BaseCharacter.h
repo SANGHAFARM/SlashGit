@@ -34,6 +34,7 @@ protected:
 	void DisableCapsule();
 	virtual bool CanAttack();
 	bool IsAlive();
+	void DisableMeshCollision();
 
 	/** Montage */
 	void PlayHitReactMontage(const FName& SectionName);	
