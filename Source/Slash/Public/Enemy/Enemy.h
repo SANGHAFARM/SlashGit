@@ -11,6 +11,7 @@ class UHealthBarComponent;
 class UPawnSensingComponent;
 class AAIController;
 class AWeapon;
+class ASoul;
 
 UCLASS()
 class SLASH_API AEnemy : public ABaseCharacter
@@ -37,7 +38,9 @@ protected:
 	/** <AActor> */
 
 	/** <ABaseCharacter> */
-	virtual void Die() override;	
+	virtual void Die() override;
+	void SpawnSoul();
+
 	virtual void Attack() override;
 	virtual bool CanAttack() override;
 	virtual void HandleDamage(float DamageAmount) override;
@@ -129,4 +132,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat)
 	float DeathLifeSpan = 8.f;
 
+	UPROPERTY(EditAnywhere, Category = Combat)
+	TSubclassOf<ASoul> SoulClass;
 };
